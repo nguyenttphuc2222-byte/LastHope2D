@@ -1,57 +1,52 @@
 ﻿using UnityEngine;
 
-/// <summary>
-/// Gắn lên prefab công trình / core / ore.
-/// sizeX,sizeY là kích thước (số ô) mà prefab chiếm. (bottom-left origin)
-/// </summary>
-[DisallowMultipleComponent]
+[RequireComponent(typeof(SpriteRenderer))]
 public class Placeable : MonoBehaviour
 {
-    [Tooltip("Width in grid cells (X)")]
+    [Header("Kích thước tính theo ô")]
     public int sizeX = 1;
-    [Tooltip("Height in grid cells (Y)")]
     public int sizeY = 1;
 
-    // Flag nếu object đã được đặt chính thức trên grid
-    [HideInInspector] public bool isPlaced = false;
-    // baseCell lưu vị trí bottom-left cell object được đặt
-    [HideInInspector] public Vector2Int baseCell;
+    [Header("Trạng thái")]
+    public bool isPlaced;          // đã “thả” xuống map?
+    public Vector2Int anchorCell;  // cell neo (góc trái-dưới)
 
-    // Tự set scale để sprite khớp 1 cell = grid cellSize; gọi khi cần
-    public void AlignToCell(GridManager grid)
+    SpriteRenderer sr;
+    Color baseColor;
+
+    void Awake()
     {
-        if (grid == null) return;
-        // set position so that bottom-left corner of object aligns with baseCell
-        Vector3 worldBottomLeft = new Vector3(grid.origin.x + baseCell.x * grid.cellSize,
-                                              grid.origin.y + baseCell.y * grid.cellSize, 0f);
-        // center pos
-        float cx = worldBottomLeft.x + (sizeX * grid.cellSize) / 2f;
-        float cy = worldBottomLeft.y + (sizeY * grid.cellSize) / 2f;
-        transform.position = new Vector3(cx, cy, transform.position.z);
-        // adjust localScale so that sprite size covers sizeX,sizeY cells if needed
-        var sr = GetComponent<SpriteRenderer>();
-        if (sr != null && sr.sprite != null)
-        {
-            float spriteUnitWidth = sr.sprite.bounds.size.x;
-            float spriteUnitHeight = sr.sprite.bounds.size.y;
-            // scale so sprite bounds match grid area
-            float scaleX = (sizeX * grid.cellSize) / spriteUnitWidth;
-            float scaleY = (sizeY * grid.cellSize) / spriteUnitHeight;
-            transform.localScale = new Vector3(scaleX, scaleY, 1f);
-        }
+        sr = GetComponent<SpriteRenderer>();
+        baseColor = sr.color;
     }
 
-    // For debugging: draw rectangle in scene
-    void OnDrawGizmosSelected()
+    public void PreviewValid(bool valid)
     {
-        var grid = FindObjectOfType<GridManager>();
-        if (grid == null) return;
-        Gizmos.color = Color.cyan;
-        Vector3 bl = new Vector3(grid.origin.x + baseCell.x * grid.cellSize, grid.origin.y + baseCell.y * grid.cellSize, 0f);
-        Vector3 tr = new Vector3(grid.origin.x + (baseCell.x + sizeX) * grid.cellSize, grid.origin.y + (baseCell.y + sizeY) * grid.cellSize, 0f);
-        Gizmos.DrawLine(bl, new Vector3(tr.x, bl.y, 0f));
-        Gizmos.DrawLine(bl, new Vector3(bl.x, tr.y, 0f));
-        Gizmos.DrawLine(tr, new Vector3(bl.x, tr.y, 0f));
-        Gizmos.DrawLine(tr, new Vector3(tr.x, bl.y, 0f));
+        // Xanh = hợp lệ, Đỏ = không hợp lệ (độ trong suốt 60%)
+        sr.color = valid ? new Color(0f, 1f, 0f, 0.6f) : new Color(1f, 0f, 0f, 0.6f);
+    }
+    public void EndPreview()
+    {
+        sr.color = baseColor;
+    }
+
+    // Ghi dấu các ô chiếm dụng (khi đặt xuống hoặc nhấc lên)
+    public void MarkOccupied(bool value)
+    {
+        GridManager.I.SetRect(anchorCell.x, anchorCell.y, sizeX, sizeY, value);
+    }
+
+    // Cập nhật vị trí thế giới dựa trên anchor + kích thước
+    public void MoveToAnchor(Vector2Int cellAnchor)
+    {
+        anchorCell = cellAnchor;
+        // Tâm hình chữ nhật sizeX×sizeY nằm lệch nửa ô:
+        float cx = anchorCell.x + sizeX / 2f - 0.5f;
+        float cy = anchorCell.y + sizeY / 2f - 0.5f;
+        Vector3 center = GridManager.I.CellToWorldCenter(Mathf.FloorToInt(cx), Mathf.FloorToInt(cy));
+        // Cẩn thận: công thức trên quy đổi trực tiếp trung tâm hình chữ nhật theo cell size
+        float wx = GridManager.I.Min().x + (anchorCell.x + sizeX / 2f) * GridManager.I.cellSize;
+        float wy = GridManager.I.Min().y + (anchorCell.y + sizeY / 2f) * GridManager.I.cellSize;
+        transform.position = new Vector3(wx, wy, 0);
     }
 }

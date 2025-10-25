@@ -1,229 +1,103 @@
 ﻿using UnityEngine;
-using UnityEngine.EventSystems;
 
-/// <summary>
-/// Dùng trong Play mode: chọn prefab placePrefab (Placeable), di chuột để preview ghost,
-/// click trái để đặt nếu area free. Click vào object đã đặt để pick up (move).
-/// Attach lên 1 GameObject (e.g., GameManager).
-/// </summary>
 public class PlacementController : MonoBehaviour
 {
-    public GridManager grid;
-    [Tooltip("Prefab phải chứa component Placeable")]
-    public GameObject placePrefab;
+    public Camera cam;
 
-    GameObject ghost; // preview instance
-    Placeable ghostPlaceable;
-    bool isDraggingExisting = false;
-    GameObject draggingObject = null; // the actual placed obj being moved (removed from grid on pickup)
+    Placeable dragging;          // đang nhấc object nào?
+    Vector2Int prevAnchor;       // lưu vị trí cũ để hoàn tác nếu cần
 
-    void Start()
-    {
-        if (grid == null) grid = FindObjectOfType<GridManager>();
-    }
+    void Start() { if (cam == null) cam = Camera.main; }
 
     void Update()
     {
-        if (grid == null) return;
+        if (!BuildMode.Active) return;
 
-        // If right-click, cancel placing
-        if (Input.GetMouseButtonDown(1))
+        // Nhấn chuột trái: nếu chưa kéo -> thử "pick" object; nếu đang kéo -> thử "drop"
+        if (Input.GetMouseButtonDown(0))
         {
-            CancelGhost();
-            return;
+            if (dragging == null) TryPick();
+            else TryDrop();
         }
 
-        // If currently dragging an existing placed object (picked up), follow mouse
-        if (isDraggingExisting && draggingObject != null)
+        // Chuột phải: hủy thao tác, trả object về chỗ cũ nếu đang kéo
+        if (Input.GetMouseButtonDown(1) && dragging != null)
         {
-            UpdateGhostFromDragging();
-            if (Input.GetMouseButtonDown(0) && !IsPointerOverUI())
-            {
-                TryPlaceDraggedObject();
-            }
-            return;
+            CancelDrag();
         }
 
-        // If there's no selected prefab, do nothing
-        if (placePrefab == null)
-        {
-            CancelGhost();
-            return;
-        }
-
-        // Ensure ghost exists
-        if (ghost == null) CreateGhost();
-
-        // Move ghost to grid cell under mouse
-        Vector3 mouseWorld = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        mouseWorld.z = 0f;
-        Vector2Int cell = grid.WorldToCell(mouseWorld);
-
-        // Use the ghost's size to interpret baseCell such that mouse points to desired base location.
-        Vector2Int size = new Vector2Int(ghostPlaceable.sizeX, ghostPlaceable.sizeY);
-
-        // We'll snap baseCell so that the ghost's bottom-left aligns to the clicked cell.
-        Vector2Int baseCell = cell;
-
-        // Check area free
-        bool canPlace = grid.IsAreaFree(baseCell, size);
-
-        // Color ghost accordingly
-        var sr = ghost.GetComponent<SpriteRenderer>();
-        if (sr != null) sr.color = canPlace ? new Color(0f, 1f, 0f, 0.6f) : new Color(1f, 0f, 0f, 0.6f);
-
-        // set ghost position/scale
-        ghostPlaceable.baseCell = baseCell;
-        ghostPlaceable.AlignToCell(grid);
-
-        // Click to place
-        if (Input.GetMouseButtonDown(0) && !IsPointerOverUI())
-        {
-            if (canPlace)
-            {
-                // instantiate actual object from prefab at correct transform
-                var real = Instantiate(placePrefab);
-                var p = real.GetComponent<Placeable>();
-                p.baseCell = baseCell;
-                if (!grid.PlaceObjectAt(real, baseCell, new Vector2Int(p.sizeX, p.sizeY)))
-                {
-                    Destroy(real);
-                    Debug.LogWarning("Unexpected: failed to place even though ghost said free.");
-                }
-                else
-                {
-                    p.isPlaced = true;
-                    p.AlignToCell(grid);
-                }
-            }
-            else
-            {
-                // feedback
-                Debug.Log("Cannot place here - area occupied or out of bounds.");
-            }
-        }
-
-        // Pick up placed object on click (if clicking on existing placed object)
-        if (Input.GetMouseButtonDown(0) && !IsPointerOverUI())
-        {
-            // raycast check topmost placed object under mouse
-            RaycastHit2D hit = Physics2D.Raycast(mouseWorld, Vector2.zero);
-            if (hit.collider != null)
-            {
-                var picked = hit.collider.gameObject.GetComponent<Placeable>();
-                if (picked != null && picked.isPlaced)
-                {
-                    // start dragging this existing object
-                    StartDraggingExisting(picked.gameObject);
-                    return;
-                }
-            }
-        }
+        // Trong khi đang kéo: bám theo chuột và snap + preview
+        if (dragging != null) FollowMouseAndPreview();
     }
 
-    void CreateGhost()
+    void TryPick()
     {
-        ghost = Instantiate(placePrefab);
-        ghost.name = "GHOST_" + placePrefab.name;
-        DestroyImmediate(ghost.GetComponent<Collider2D>()); // remove collider if any
-        ghostPlaceable = ghost.GetComponent<Placeable>();
-        // make transparent & not interactable
-        var sr = ghost.GetComponent<SpriteRenderer>();
-        if (sr != null) sr.sortingOrder = 1000;
-        // disable script behaviors if any
-        foreach (var mb in ghost.GetComponents<MonoBehaviour>()) mb.enabled = false;
-    }
+        // Raycast 2D tìm Placeable dưới trỏ chuột (ưu tiên kéo object đã có sẵn)
+        var world = cam.ScreenToWorldPoint(Input.mousePosition); world.z = 0;
+        var hit = Physics2D.OverlapPoint(world);
+        Placeable p = hit ? hit.GetComponent<Placeable>() : null;
 
-    void CancelGhost()
-    {
-        if (ghost != null) Destroy(ghost);
-        ghost = null;
-        ghostPlaceable = null;
-        if (isDraggingExisting)
+        if (p != null)
         {
-            // if cancel dragging, put object back to its old place (we removed occupancy on pickup)
-            if (draggingObject != null)
+            dragging = p;
+            prevAnchor = p.anchorCell;
+
+            if (p.isPlaced)
             {
-                var p = draggingObject.GetComponent<Placeable>();
-                if (p != null)
-                {
-                    // try to re-place where baseCell currently is (should be old baseCell)
-                    grid.PlaceObjectAt(draggingObject, p.baseCell, new Vector2Int(p.sizeX, p.sizeY));
-                    p.isPlaced = true;
-                    p.AlignToCell(grid);
-                }
+                // Bỏ chiếm chỗ tạm thời để di chuyển tự do
+                p.MarkOccupied(false);
+                p.isPlaced = false;
             }
-            isDraggingExisting = false;
-            draggingObject = null;
         }
+        // Nếu không trúng object: bạn cũng có thể thiết kế chế độ "spawn prefab đang chọn"
+        // Ở MVP này, mình tập trung vào kéo object có sẵn trong scene.
     }
 
-    void StartDraggingExisting(GameObject obj)
+    void TryDrop()
     {
-        // remove occupancy so area becomes free while moving
-        grid.RemoveObject(obj);
-        var p = obj.GetComponent<Placeable>();
-        if (p != null) p.isPlaced = false;
-        draggingObject = obj;
-        isDraggingExisting = true;
-        // create ghost visual from obj
-        if (ghost != null) Destroy(ghost);
-        ghost = Instantiate(obj);
-        ghost.name = "DRAG_GHOST_" + obj.name;
-        ghostPlaceable = ghost.GetComponent<Placeable>();
-        // disable scripts on ghost
-        foreach (var mb in ghost.GetComponents<MonoBehaviour>()) mb.enabled = false;
-        var sr = ghost.GetComponent<SpriteRenderer>();
-        if (sr != null) sr.color = new Color(0f, 0.5f, 1f, 0.6f);
-    }
+        // Tính lại anchorCell theo chuột + kích thước
+        Vector3 world = cam.ScreenToWorldPoint(Input.mousePosition); world.z = 0;
+        Vector2Int anchor = GridManager.I.SnapAnchorCell(world, dragging.sizeX, dragging.sizeY);
 
-    void UpdateGhostFromDragging()
-    {
-        Vector3 mouseWorld = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        mouseWorld.z = 0f;
-        Vector2Int cell = grid.WorldToCell(mouseWorld);
-        Vector2Int size = new Vector2Int(ghostPlaceable.sizeX, ghostPlaceable.sizeY);
-        Vector2Int baseCell = cell;
-        bool canPlace = grid.IsAreaFree(baseCell, size);
-        var sr = ghost.GetComponent<SpriteRenderer>();
-        if (sr != null) sr.color = canPlace ? new Color(0f, 1f, 0f, 0.6f) : new Color(1f, 0f, 0f, 0.6f);
-        ghostPlaceable.baseCell = baseCell;
-        ghostPlaceable.AlignToCell(grid);
-    }
-
-    void TryPlaceDraggedObject()
-    {
-        Vector2Int baseCell = ghostPlaceable.baseCell;
-        Vector2Int size = new Vector2Int(ghostPlaceable.sizeX, ghostPlaceable.sizeY);
-        if (grid.IsAreaFree(baseCell, size))
+        bool ok = GridManager.I.RectFree(anchor.x, anchor.y, dragging.sizeX, dragging.sizeY);
+        if (ok)
         {
-            // place draggingObject
-            var p = draggingObject.GetComponent<Placeable>();
-            p.baseCell = baseCell;
-            if (!grid.PlaceObjectAt(draggingObject, baseCell, size))
-            {
-                Debug.LogWarning("Unexpected fail to place dragged object.");
-            }
-            else
-            {
-                p.isPlaced = true;
-                p.AlignToCell(grid);
-            }
-            // destroy ghost
-            Destroy(ghost);
-            ghost = null;
-            ghostPlaceable = null;
-            draggingObject = null;
-            isDraggingExisting = false;
+            dragging.MoveToAnchor(anchor);
+            dragging.MarkOccupied(true);
+            dragging.isPlaced = true;
+            dragging.EndPreview();
+            dragging = null;
         }
         else
         {
-            Debug.Log("Cannot place dragged object here.");
+            // Không hợp lệ: vẫn giữ ở trạng thái kéo (cho thử chỗ khác),
+            // hoặc nếu bạn muốn thì tự động trả về chỗ cũ:
+            // dragging.MoveToAnchor(prevAnchor);
+            // dragging.MarkOccupied(true);
+            // dragging.isPlaced = true; dragging.EndPreview(); dragging = null;
         }
     }
 
-    bool IsPointerOverUI()
+    void CancelDrag()
     {
-        return EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
+        // Trả về vị trí cũ (nếu object từng được đặt trước đó)
+        if (dragging != null && prevAnchor != default)
+        {
+            dragging.MoveToAnchor(prevAnchor);
+            dragging.MarkOccupied(true);
+            dragging.isPlaced = true;
+            dragging.EndPreview();
+        }
+        dragging = null;
+    }
+
+    void FollowMouseAndPreview()
+    {
+        Vector3 world = cam.ScreenToWorldPoint(Input.mousePosition); world.z = 0;
+        Vector2Int anchor = GridManager.I.SnapAnchorCell(world, dragging.sizeX, dragging.sizeY);
+
+        bool ok = GridManager.I.RectFree(anchor.x, anchor.y, dragging.sizeX, dragging.sizeY);
+        dragging.PreviewValid(ok);
+        dragging.MoveToAnchor(anchor); // Di theo chuột nhưng vẫn snap
     }
 }

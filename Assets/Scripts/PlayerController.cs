@@ -15,7 +15,6 @@ public class PlayerController : MonoBehaviour
 
     void Update()
     {
-        if (BuildMode.Active) return; // đang build thì không nhận click di chuyển
 
         // Click chuột trái => đặt target
         if (Input.GetMouseButtonDown(0))//0 là trái, 1 là phải

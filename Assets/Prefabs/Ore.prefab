@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1 &8025673723752781695
+--- !u!1 &8654102505156734079
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -8,40 +8,40 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 8121756729236760694}
-  - component: {fileID: 3899753608090095597}
-  - component: {fileID: 2140783696144813748}
-  - component: {fileID: -4549577322260181788}
-  - component: {fileID: 8311326290088132865}
+  - component: {fileID: 7479591555751016099}
+  - component: {fileID: 378872458959146557}
+  - component: {fileID: 8861591272072510045}
+  - component: {fileID: 4139344927400741106}
+  - component: {fileID: 4949663953808612587}
   m_Layer: 0
-  m_Name: Ore_Graphite
+  m_Name: Ore
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &8121756729236760694
+--- !u!4 &7479591555751016099
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8025673723752781695}
+  m_GameObject: {fileID: 8654102505156734079}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -3.75, y: 8.27, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!212 &3899753608090095597
+--- !u!212 &378872458959146557
 SpriteRenderer:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8025673723752781695}
+  m_GameObject: {fileID: 8654102505156734079}
   m_Enabled: 1
   m_CastShadows: 0
   m_ReceiveShadows: 0
@@ -81,9 +81,9 @@ SpriteRenderer:
   m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 0
   m_SortingLayer: 0
-  m_SortingOrder: 2
-  m_Sprite: {fileID: 7482667652216324306, guid: 311925a002f4447b3a28927169b83ea6, type: 3}
-  m_Color: {r: 0.16862746, g: 0.16862746, b: 0.16862746, a: 1}
+  m_SortingOrder: 0
+  m_Sprite: {fileID: 7482667652216324306, guid: d6cf49b862bf9e641b203820bb904de6, type: 3}
+  m_Color: {r: 1, g: 0.6470588, b: 0, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -93,43 +93,26 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
---- !u!114 &2140783696144813748
+--- !u!114 &8861591272072510045
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8025673723752781695}
+  m_GameObject: {fileID: 8654102505156734079}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c230ec4f22b767b4589261b870fe3ba7, type: 3}
+  m_Script: {fileID: 11500000, guid: e970244d23efec2428228b8938272a26, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ResourceNode
-  type: 2
-  amount: -1
---- !u!114 &-4549577322260181788
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8025673723752781695}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 669aac4a9a608ff4da96ca000108aba9, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Placeable
-  sizeX: 1
-  sizeY: 1
-  isPlaced: 0
-  anchorCell: {x: 0, y: 0}
---- !u!61 &8311326290088132865
+  m_EditorClassIdentifier: Assembly-CSharp::OreBuilding
+  size: {x: 1, y: 1}
+--- !u!61 &4139344927400741106
 BoxCollider2D:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8025673723752781695}
+  m_GameObject: {fileID: 8654102505156734079}
   m_Enabled: 1
   serializedVersion: 3
   m_Density: 1
@@ -153,7 +136,7 @@ BoxCollider2D:
   m_CallbackLayers:
     serializedVersion: 2
     m_Bits: 4294967295
-  m_IsTrigger: 1
+  m_IsTrigger: 0
   m_UsedByEffector: 0
   m_CompositeOperation: 0
   m_CompositeOrder: 0
@@ -169,3 +152,15 @@ BoxCollider2D:
   m_AutoTiling: 0
   m_Size: {x: 1, y: 1}
   m_EdgeRadius: 0
+--- !u!114 &4949663953808612587
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8654102505156734079}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7bcc4bf1fb04412459c2cbdd63d276ad, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MapBlock

@@ -10,10 +10,10 @@ GameObject:
   m_Component:
   - component: {fileID: 7479591555751016099}
   - component: {fileID: 378872458959146557}
-  - component: {fileID: 8861591272072510045}
   - component: {fileID: 4139344927400741106}
   - component: {fileID: 4949663953808612587}
-  m_Layer: 0
+  - component: {fileID: 2198993188028115351}
+  m_Layer: 7
   m_Name: Ore
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -93,19 +93,6 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
---- !u!114 &8861591272072510045
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8654102505156734079}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e970244d23efec2428228b8938272a26, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::OreBuilding
-  size: {x: 1, y: 1}
 --- !u!61 &4139344927400741106
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -164,3 +151,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7bcc4bf1fb04412459c2cbdd63d276ad, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MapBlock
+--- !u!114 &2198993188028115351
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8654102505156734079}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 984d19ad1799299448e068fe329d4131, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::OreNode
+  totalOre: -1

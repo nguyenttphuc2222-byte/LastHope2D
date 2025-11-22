@@ -35,6 +35,12 @@ public class EnemyBasic : MonoBehaviour
             currentTarget = null;
         }
 
+        // an toàn: nếu target hiện tại lỡ là EnemyCoreBuilding thì bỏ
+        if (currentTarget is EnemyCoreBuilding)
+        {
+            currentTarget = null;
+        }
+
         // chọn target mặc định là Core nếu chưa có
         if (currentTarget == null)
         {
@@ -52,7 +58,7 @@ public class EnemyBasic : MonoBehaviour
             rb.MovePosition(rb.position + step);
         }
 
-        // tấn công nếu đang trong tầm (trigger đang chạm) và cooldown xong
+        // tấn công nếu đang trong tầm và cooldown xong
         if (currentTarget != null && dist <= stopDistance + 0.05f)
         {
             attackTimer -= Time.fixedDeltaTime;
@@ -64,12 +70,16 @@ public class EnemyBasic : MonoBehaviour
         }
     }
 
-    // Khi chạm bất kỳ BuildingBase nào, nó trở thành target mới
+    // Khi chạm BuildingBase, chọn làm target mới,
+    // TRỪ EnemyCoreBuilding (không cắn nhà của mình)
     private void OnCollisionEnter2D(Collision2D collision)
     {
         BuildingBase b = collision.collider.GetComponent<BuildingBase>();
         if (b != null)
         {
+            if (b is EnemyCoreBuilding)
+                return; // bỏ qua Enemy Core
+
             currentTarget = b;
             attackTimer = 0f; // đánh ngay
         }
@@ -83,7 +93,6 @@ public class EnemyBasic : MonoBehaviour
             currentTarget = null; // rời khỏi building -> quay lại core
         }
     }
-
 
     // để dùng sau này (turret / player bắn quái)
     public void TakeDamage(int amount)

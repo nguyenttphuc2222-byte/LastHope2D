@@ -39,6 +39,21 @@ public class BuildingBase : MonoBehaviour
         }
     }
 
+    public virtual void Heal(int amount)
+    {
+        if (amount <= 0 || currentHealth <= 0) return;
+
+        currentHealth = Mathf.Min(maxHealth, currentHealth + amount);
+
+        //// nếu bạn có tham chiếu healthBar trong BuildingBase:
+        //if (healthBar != null)
+        //{
+        //    float normalized = currentHealth / (float)maxHealth;
+        //    healthBar.SetValue(normalized);
+        //}
+    }
+
+
     protected virtual void OnDestroyed()
     {
         // Xoá khỏi grid

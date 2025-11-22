@@ -23,8 +23,8 @@ public class TurretBuilding : BuildingBase
     {
         fireCooldown -= Time.deltaTime;
 
-        // 1) Tìm target (nếu có)
-        EnemyBasic target = FindTarget();
+        // 1) Tìm target (EnemyBasic hoặc EnemyCoreBuilding)
+        Transform target = FindTarget();
 
         // 2) Xoay nòng về phía target trước
         RotateBarrelTowards(target);
@@ -36,36 +36,54 @@ public class TurretBuilding : BuildingBase
         }
     }
 
-    private EnemyBasic FindTarget()
+    // Tìm target gần nhất trong range:
+    // ưu tiên EnemyBasic, nhưng nếu không có thì EnemyCoreBuilding cũng được.
+    private Transform FindTarget()
     {
         Collider2D[] hits = Physics2D.OverlapCircleAll(transform.position, range);
-        EnemyBasic closest = null;
+
+        Transform closest = null;
         float bestDistSqr = float.MaxValue;
 
         foreach (var h in hits)
         {
-            EnemyBasic e = h.GetComponent<EnemyBasic>();
-            if (e == null) continue;
+            Transform candidate = null;
 
-            float dSqr = (e.transform.position - transform.position).sqrMagnitude;
+            // enemy thường
+            EnemyBasic e = h.GetComponent<EnemyBasic>();
+            if (e != null)
+            {
+                candidate = e.transform;
+            }
+            else
+            {
+                // enemy core
+                EnemyCoreBuilding enemyCore = h.GetComponent<EnemyCoreBuilding>();
+                if (enemyCore != null)
+                {
+                    candidate = enemyCore.transform;
+                }
+            }
+
+            if (candidate == null) continue;
+
+            float dSqr = (candidate.position - transform.position).sqrMagnitude;
             if (dSqr < bestDistSqr)
             {
                 bestDistSqr = dSqr;
-                closest = e;
+                closest = candidate;
             }
         }
 
         return closest;
     }
 
-    private void RotateBarrelTowards(EnemyBasic target)
+    private void RotateBarrelTowards(Transform target)
     {
         if (barrelTransform == null) return;
+        if (target == null) return; // không có enemy trong range -> giữ nguyên hướng hiện tại
 
-        if (target == null)
-            return; // không có enemy trong range -> giữ nguyên hướng hiện tại
-
-        Vector3 dir = (target.transform.position - barrelTransform.position).normalized;
+        Vector3 dir = (target.position - barrelTransform.position).normalized;
 
         float targetAngle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
 
@@ -84,12 +102,12 @@ public class TurretBuilding : BuildingBase
 
     private void Shoot()
     {
-        if (bulletPrefab == null) return;
+        if (bulletPrefab == null || barrelTransform == null) return;
 
         Vector3 origin = firePoint != null ? firePoint.position : barrelTransform.position;
 
-        // Hướng bắn lấy từ hướng nòng sau khi đã quay (đảm bảo "nòng trước, đạn sau")
-        Vector2 dir = barrelTransform.up; // nếu sprite nòng hướng lên; nếu hướng phải thì dùng barrelTransform.right
+        // Hướng bắn lấy từ hướng nòng sau khi đã quay
+        Vector2 dir = barrelTransform.up; // sprite nòng hướng lên
 
         Bullet b = Instantiate(bulletPrefab, origin, barrelTransform.rotation);
         b.Init(dir, bulletDamage);

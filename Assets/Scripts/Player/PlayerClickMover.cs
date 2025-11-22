@@ -6,8 +6,15 @@ public class PlayerClickMover : MonoBehaviour
 {
     public float moveSpeed = 15f;
 
+    [Tooltip("Kéo chuột ngắn hơn (pixel) thì coi là click, dài hơn thì coi là drag (multi-select).")]
+    public float clickMaxDragDistance = 10f;   // thử 10px, sau muốn thì tăng/giảm
+
     private Rigidbody2D rb;
     private Vector2 targetPos;
+
+    // lưu vị trí mouse khi bắt đầu nhấn
+    private Vector2 mouseDownScreenPos;
+    private bool hasMouseDown = false;
 
     private void Awake()
     {
@@ -17,19 +24,40 @@ public class PlayerClickMover : MonoBehaviour
 
     private void Update()
     {
-        // Click chuột trái => đặt target
-        if (Input.GetMouseButtonDown(0)) // 0 = left
+        // 1) Mouse DOWN: chỉ lưu vị trí, chưa move vội
+        if (Input.GetMouseButtonDown(0)) // chuột trái
         {
-            // Nếu đang click lên UI (button, panel, v.v.) thì bỏ qua
+            // nếu đang click lên UI thì bỏ qua
             if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
                 return;
 
-            Vector3 mouseWorld = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+            mouseDownScreenPos = Input.mousePosition;
+            hasMouseDown = true;
+        }
+
+        // 2) Mouse UP: nếu kéo ngắn -> coi là click để move
+        if (Input.GetMouseButtonUp(0) && hasMouseDown)
+        {
+            hasMouseDown = false;
+
+            // thả chuột mà đang trên UI thì cũng bỏ qua
+            if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
+                return;
+
+            Vector2 mouseUpScreenPos = Input.mousePosition;
+            float sqrDragDist = (mouseUpScreenPos - mouseDownScreenPos).sqrMagnitude;
+
+            // nếu kéo quá xa -> đây là drag (multi-select) -> KHÔNG di chuyển player
+            if (sqrDragDist > clickMaxDragDistance * clickMaxDragDistance)
+                return;
+
+            // => đây là 1 cú CLICK thực sự -> set targetPos
+            Vector3 mouseWorld = Camera.main.ScreenToWorldPoint(mouseUpScreenPos);
             mouseWorld.z = 0f;
 
             Vector2 target = mouseWorld;
 
-            // Clamp vị trí trong giới hạn map từ GridManager
+            // Clamp trong bounds của map
             if (GridManager.Instance != null)
             {
                 Rect bounds = GridManager.Instance.GetWorldBounds();
@@ -53,7 +81,11 @@ public class PlayerClickMover : MonoBehaviour
         else
         {
             // Dừng lại khi đã tới
-            rb.linearVelocity = Vector2.zero;
+#if UNITY_6000_OR_NEWER
+            rb.linearVelocity = Vector2.zero;   // nếu bạn đang dùng API mới
+#else
+            rb.linearVelocity = Vector2.zero;         // nếu dùng Unity/Physics2D cũ
+#endif
         }
     }
 }

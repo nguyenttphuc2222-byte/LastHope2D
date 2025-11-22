@@ -11,6 +11,9 @@ public class BuildOption
 
     [Tooltip("Prefab của building (phải là prefab chứa BuildingBase).")]
     public BuildingBase prefab;
+
+    [Tooltip("Giữ chuột phải để kéo xây hàng loạt? (nên bật cho Wall, Conveyor).")]
+    public bool allowDragBuild = false;
 }
 
 public class BuildingPlacer : MonoBehaviour
@@ -29,8 +32,8 @@ public class BuildingPlacer : MonoBehaviour
     [Tooltip("Độ lệch Z để preview không bị trùng với sprite thật.")]
     public float previewZOffset = -0.1f;
 
-    public Color validColor = new Color(0f, 1f, 0f, 0.35f);
-    public Color invalidColor = new Color(1f, 0f, 0f, 0.35f);
+    public Color validColor = new Color(0f, 1f, 0f, 1f);
+    public Color invalidColor = new Color(1f, 0f, 0f, 1f);
 
     [Header("Khác")]
     public LayerMask placementBlockedMask;
@@ -40,6 +43,14 @@ public class BuildingPlacer : MonoBehaviour
     // preview runtime
     private BuildingBase previewInstance;
     private SpriteRenderer[] previewRenderers;
+
+    // ---------- Conveyor rotation ----------
+    private ConveyorDirection previewConveyorDir = ConveyorDirection.Right;
+    private static ConveyorDirection lastConveyorDir = ConveyorDirection.Right;
+
+    // ---------- Drag-build ----------
+    private bool isDragBuilding = false;
+    private Vector2Int lastPlacedCell;
 
     private void Start()
     {
@@ -55,15 +66,12 @@ public class BuildingPlacer : MonoBehaviour
         }
 
         CreatePreviewForCurrentOption();
-
-        // Vừa vào game: build mode OFF, nên ẩn preview
-        SetPreviewVisible(false);
+        SetPreviewVisible(false); // vừa vào game: OFF
     }
 
     private void Update()
     {
-
-        // Toggle build mode bằng phím B
+        // Toggle build mode bằng B
         if (Input.GetKeyDown(KeyCode.B))
         {
             buildModeEnabled = !buildModeEnabled;
@@ -71,52 +79,106 @@ public class BuildingPlacer : MonoBehaviour
             Debug.Log(buildModeEnabled ? "Build mode: ON" : "Build mode: OFF");
         }
 
-        // Nếu chưa bật build mode thì bỏ qua toàn bộ logic xây
         if (!buildModeEnabled)
         {
+            // nếu tắt build mode thì đảm bảo trạng thái drag cũng tắt
+            isDragBuilding = false;
             return;
         }
 
         HandleHotkeys();
+        HandleConveyorRotateKey();
         UpdatePreview();
 
-        // Chuột phải để đặt building chỉ khi build mode đang bật
+        HandleBuildMouseInput();
+    }
+
+    // =========================================
+    //      INPUT CHUỘT PHẢI (BUILD / DRAG)
+    // =========================================
+
+    private void HandleBuildMouseInput()
+    {
+        if (GridManager.Instance == null || mainCam == null) return;
+
+        // Bắt đầu đặt khi nhấn xuống chuột phải
         if (Input.GetMouseButtonDown(1))
         {
-            if (GridManager.Instance == null || mainCam == null) return;
+            Vector2Int cell = GetMouseCell();
+            bool placed = TryPlaceBuildingAtCell(cell);
 
-            Vector3 worldPos = mainCam.ScreenToWorldPoint(Input.mousePosition);
-            worldPos.z = 0f;
+            // Nếu option hiện tại cho phép drag-build -> bật cờ
+            BuildOption opt = GetCurrentOption();
+            bool allowDrag =
+                (opt != null && opt.allowDragBuild && opt.prefab != null);
 
-            Vector2Int cell = GridManager.Instance.WorldToCell(worldPos);
-            TryPlaceBuildingAtCell(cell);
+            isDragBuilding = placed && allowDrag;
+            lastPlacedCell = cell;
+        }
+        // Khi đang giữ chuột phải
+        else if (Input.GetMouseButton(1))
+        {
+            if (!isDragBuilding) return;
+
+            Vector2Int cell = GetMouseCell();
+            if (cell != lastPlacedCell)
+            {
+                bool placed = TryPlaceBuildingAtCell(cell);
+                if (placed)
+                {
+                    lastPlacedCell = cell;
+                }
+            }
+        }
+        // Nhả chuột phải -> tắt drag-build
+        else if (Input.GetMouseButtonUp(1))
+        {
+            isDragBuilding = false;
         }
     }
+
+    private Vector2Int GetMouseCell()
+    {
+        Vector3 worldPos = mainCam.ScreenToWorldPoint(Input.mousePosition);
+        worldPos.z = 0f;
+        return GridManager.Instance.WorldToCell(worldPos);
+    }
+
+    // =========================================
+    //              HOTKEY & OPTION
+    // =========================================
 
     private void HandleHotkeys()
     {
         if (options == null || options.Length == 0) return;
 
-        // --- BẮT PHÍM THEO KÝ TỰ (robust) ---
-        string s = Input.inputString;    // các ký tự gõ trong frame này
+        string s = Input.inputString;
         if (!string.IsNullOrEmpty(s))
         {
-            // nếu trong chuỗi có '1' -> chọn option 0 (Wall)
             if (s.Contains("1") && options.Length > 0)
             {
                 SelectBuildOption(0);
                 return;
             }
 
-            // nếu có '2' -> chọn option 1 (Turret)
             if (s.Contains("2") && options.Length > 1)
             {
                 SelectBuildOption(1);
                 return;
             }
-        }
 
-        // --- FALLBACK: vẫn cho phép gán hotkey khác trong Inspector (Q, E, 3,4,5...) ---
+            if (s.Contains("3") && options.Length > 2)
+            {
+                SelectBuildOption(2);
+                return;
+            }
+
+            if (s.Contains("4") && options.Length > 3)
+            {
+                SelectBuildOption(3);
+                return;
+            }
+        }
 
         for (int i = 0; i < options.Length; i++)
         {
@@ -131,7 +193,6 @@ public class BuildingPlacer : MonoBehaviour
         }
     }
 
-
     private void SelectBuildOption(int index)
     {
         index = Mathf.Clamp(index, 0, options.Length - 1);
@@ -141,13 +202,17 @@ public class BuildingPlacer : MonoBehaviour
         if (opt != null)
         {
             Debug.Log($"[BuildingPlacer] Chọn loại building: {opt.id} (index {index})");
+
+            // Nếu prefab là Conveyor -> dùng lại hướng cuối cùng
+            if (opt.prefab != null && opt.prefab.GetComponent<ConveyorBuilding>() != null)
+            {
+                previewConveyorDir = lastConveyorDir;
+            }
         }
 
         CreatePreviewForCurrentOption();
         SetPreviewVisible(buildModeEnabled);
     }
-
-
 
     private BuildOption GetCurrentOption()
     {
@@ -156,9 +221,12 @@ public class BuildingPlacer : MonoBehaviour
         return options[selectedIndex];
     }
 
+    // =========================================
+    //                  PREVIEW
+    // =========================================
+
     private void CreatePreviewForCurrentOption()
     {
-        // Xoá preview cũ
         if (previewInstance != null)
         {
             Destroy(previewInstance.gameObject);
@@ -169,25 +237,38 @@ public class BuildingPlacer : MonoBehaviour
         BuildOption opt = GetCurrentOption();
         if (opt == null || opt.prefab == null) return;
 
-        // Tạo object preview từ prefab
         previewInstance = Instantiate(opt.prefab);
         previewInstance.gameObject.name = opt.prefab.name + "_Preview";
 
-        // Vô hiệu hoá collider / physics để không va chạm
-        Collider2D[] cols = previewInstance.GetComponentsInChildren<Collider2D>();
-        foreach (var c in cols)
+        // Tắt logic
+        MonoBehaviour[] behaviours = previewInstance.GetComponentsInChildren<MonoBehaviour>(true);
+        foreach (var mb in behaviours)
         {
-            c.enabled = false;
+            if (mb == null) continue;
+            mb.enabled = false;
         }
+
+        // Tắt collider / physics
+        Collider2D[] cols = previewInstance.GetComponentsInChildren<Collider2D>();
+        foreach (var c in cols) c.enabled = false;
 
         Rigidbody2D[] bodies = previewInstance.GetComponentsInChildren<Rigidbody2D>();
-        foreach (var rb in bodies)
-        {
-            rb.simulated = false;
-        }
+        foreach (var rb in bodies) rb.simulated = false;
 
-        previewRenderers = previewInstance.GetComponentsInChildren<SpriteRenderer>();
+        // Lấy sprite renderer (kể cả disable)
+        previewRenderers = previewInstance.GetComponentsInChildren<SpriteRenderer>(true);
+        foreach (var sr in previewRenderers)
+        {
+            if (sr == null) continue;
+            sr.enabled = true;
+        }
         SetPreviewColor(invalidColor);
+
+        // Nếu là conveyor -> xoay theo hướng hiện tại
+        if (opt.prefab.GetComponent<ConveyorBuilding>() != null)
+        {
+            ApplyConveyorRotation(previewInstance.transform, previewConveyorDir);
+        }
     }
 
     private void UpdatePreview()
@@ -206,9 +287,24 @@ public class BuildingPlacer : MonoBehaviour
             return;
         }
 
-        bool canPlace = GridManager.Instance.CanPlaceBuilding(opt.prefab, cell);
+        BuildingBase prefabBase = opt.prefab;
 
-        Vector3 centerWorld = GetBuildingWorldCenter(opt.prefab, cell);
+        bool canPlace = GridManager.Instance.CanPlaceBuilding(prefabBase, cell);
+
+        bool isDrill = prefabBase.GetComponent<OreBuilding>() != null;
+        bool hasOreUnder = HasOreUnderBuilding(prefabBase, cell);
+
+        if (isDrill)
+        {
+            canPlace = canPlace && hasOreUnder;
+        }
+        else
+        {
+            if (hasOreUnder)
+                canPlace = false;
+        }
+
+        Vector3 centerWorld = GetBuildingWorldCenter(prefabBase, cell);
         previewInstance.transform.position = new Vector3(
             centerWorld.x,
             centerWorld.y,
@@ -237,7 +333,6 @@ public class BuildingPlacer : MonoBehaviour
         {
             SpriteRenderer sr = previewRenderers[i];
             if (sr == null) continue;
-
             sr.color = c;
         }
     }
@@ -245,30 +340,53 @@ public class BuildingPlacer : MonoBehaviour
     private void SetPreviewVisible(bool visible)
     {
         if (previewInstance != null)
-        {
             previewInstance.gameObject.SetActive(visible);
-        }
     }
 
-    private void TryPlaceBuildingAtCell(Vector2Int cell)
+    // =========================================
+    //            PLACE BUILDING (1 ô)
+    // =========================================
+
+    private bool TryPlaceBuildingAtCell(Vector2Int cell)
     {
         BuildOption opt = GetCurrentOption();
         if (opt == null || opt.prefab == null)
         {
             Debug.LogWarning("BuildingPlacer: chưa chọn prefab để đặt.");
-            return;
+            return false;
         }
 
         BuildingBase prefabBase = opt.prefab;
 
-        // 1) Check vị trí hợp lệ theo GridManager
-        if (!GridManager.Instance.CanPlaceBuilding(prefabBase, cell))
+        bool canPlace = GridManager.Instance.CanPlaceBuilding(prefabBase, cell);
+
+        bool isDrill = prefabBase.GetComponent<OreBuilding>() != null;
+        bool hasOreUnder = HasOreUnderBuilding(prefabBase, cell);
+
+        if (isDrill)
         {
-            Debug.Log("Không thể đặt " + opt.id + " tại cell " + cell);
-            return;
+            canPlace = canPlace && hasOreUnder;
+        }
+        else
+        {
+            if (hasOreUnder)
+                canPlace = false;
         }
 
-        // 2) Check tài nguyên từ Core
+        if (!canPlace)
+        {
+            if (isDrill && !hasOreUnder && BuildFeedbackUI.Instance != null)
+            {
+                BuildFeedbackUI.Instance.ShowMessage(
+                    "Drill must be placed on ore",
+                    Input.mousePosition
+                );
+            }
+
+            Debug.Log("Không thể đặt " + opt.id + " tại cell " + cell);
+            return false;
+        }
+
         CoreBuilding core = CoreBuilding.Instance;
         int cost = prefabBase.buildCostOre;
 
@@ -276,7 +394,6 @@ public class BuildingPlacer : MonoBehaviour
         {
             if (!core.TrySpendOre(cost))
             {
-                // GỌI UI báo "Not enough ore" ngay tại vị trí chuột
                 if (BuildFeedbackUI.Instance != null)
                 {
                     BuildFeedbackUI.Instance.ShowNotEnoughOre(Input.mousePosition);
@@ -285,16 +402,20 @@ public class BuildingPlacer : MonoBehaviour
                 Debug.Log(
                     $"Không đủ ore để xây {opt.id}. Cần {cost}, Core chỉ có {core.oreAmount}"
                 );
-                return;
+                return false;
             }
         }
 
-
-        // 3) Thực sự đặt building
         BuildingBase b = Instantiate(prefabBase);
         GridManager.Instance.PlaceBuilding(b, cell);
 
-        // Pop effect khi đặt thành công
+        ConveyorBuilding conveyor = b.GetComponent<ConveyorBuilding>();
+        if (conveyor != null)
+        {
+            conveyor.direction = previewConveyorDir;
+            ApplyConveyorRotation(conveyor.transform, previewConveyorDir);
+        }
+
         var buildEffect = b.GetComponent<BuildEffect>();
         if (buildEffect != null)
         {
@@ -305,5 +426,88 @@ public class BuildingPlacer : MonoBehaviour
             $"Đặt {opt.id} tại cell {cell}, tốn {cost} ore. Core còn {core?.oreAmount}"
         );
 
+        return true;
+    }
+
+    // =========================================
+    //           ORE CHECK (cho Drill)
+    // =========================================
+
+    private bool HasOreUnderBuilding(BuildingBase prefabBase, Vector2Int anchorCell)
+    {
+        if (GridManager.Instance == null) return false;
+
+        GridManager gm = GridManager.Instance;
+        Vector2Int size = prefabBase.size;
+
+        for (int dx = 0; dx < size.x; dx++)
+        {
+            for (int dy = 0; dy < size.y; dy++)
+            {
+                Vector2Int cell = new Vector2Int(anchorCell.x + dx, anchorCell.y + dy);
+                if (!gm.IsInBounds(cell)) continue;
+
+                Vector3 center = gm.CellToWorldCenter(cell);
+
+                Collider2D[] hits = Physics2D.OverlapCircleAll(center, gm.cellSize * 0.3f);
+                foreach (var h in hits)
+                {
+                    if (h != null && h.GetComponentInParent<OreNode>() != null)
+                    {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
+    // =========================================
+    //          CONVEYOR ROTATION HELPERS
+    // =========================================
+
+    private void HandleConveyorRotateKey()
+    {
+        BuildOption opt = GetCurrentOption();
+        if (opt == null || opt.prefab == null) return;
+        if (opt.prefab.GetComponent<ConveyorBuilding>() == null) return;
+
+        if (Input.GetKeyDown(KeyCode.R))
+        {
+            previewConveyorDir = NextDirection(previewConveyorDir);
+            lastConveyorDir = previewConveyorDir;
+
+            if (previewInstance != null)
+            {
+                ApplyConveyorRotation(previewInstance.transform, previewConveyorDir);
+            }
+        }
+    }
+
+    private ConveyorDirection NextDirection(ConveyorDirection dir)
+    {
+        switch (dir)
+        {
+            case ConveyorDirection.Right: return ConveyorDirection.Up;
+            case ConveyorDirection.Up: return ConveyorDirection.Left;
+            case ConveyorDirection.Left: return ConveyorDirection.Down;
+            case ConveyorDirection.Down: return ConveyorDirection.Right;
+            default: return ConveyorDirection.Right;
+        }
+    }
+
+    private void ApplyConveyorRotation(Transform t, ConveyorDirection dir)
+    {
+        float angle = 0f;
+        switch (dir)
+        {
+            case ConveyorDirection.Right: angle = 0f; break;
+            case ConveyorDirection.Up: angle = 90f; break;
+            case ConveyorDirection.Left: angle = 180f; break;
+            case ConveyorDirection.Down: angle = 270f; break;
+        }
+
+        t.rotation = Quaternion.Euler(0f, 0f, angle);
     }
 }

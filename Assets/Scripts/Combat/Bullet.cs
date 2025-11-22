@@ -25,10 +25,7 @@ public class Bullet : MonoBehaviour
         float angle = Mathf.Atan2(moveDir.y, moveDir.x) * Mathf.Rad2Deg;
         // Nếu sprite gốc đang "hướng lên" (0,1) thì trục up cần quay tới angle
         transform.rotation = Quaternion.AngleAxis(angle - 90f, Vector3.forward);
-        // Nếu sprite gốc đang "hướng sang phải" (1,0) thì bỏ -90f:
-        // transform.rotation = Quaternion.AngleAxis(angle, Vector3.forward);
     }
-
 
     private void Start()
     {
@@ -42,11 +39,22 @@ public class Bullet : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D other)
     {
+        // 1) Enemy thường
         EnemyBasic enemy = other.GetComponent<EnemyBasic>();
         if (enemy != null)
         {
             enemy.TakeDamage(damage);
             Destroy(gameObject);
+            return;
+        }
+
+        // 2) Enemy Core
+        EnemyCoreBuilding enemyCore = other.GetComponent<EnemyCoreBuilding>();
+        if (enemyCore != null)
+        {
+            enemyCore.TakeDamage(damage);
+            Destroy(gameObject);
+            return;
         }
     }
 }

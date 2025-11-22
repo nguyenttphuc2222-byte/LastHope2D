@@ -18,6 +18,7 @@ public class WaveManager : MonoBehaviour
     public TextMeshProUGUI waveText;                    // UI Text để hiển thị "Wave X"
 
     private int currentWave = 1;
+    public int CurrentWave => currentWave;
     private float waveTimer;
 
     private void Start()

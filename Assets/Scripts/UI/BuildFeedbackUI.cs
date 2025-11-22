@@ -55,12 +55,12 @@ public class BuildFeedbackUI : MonoBehaviour
         }
     }
 
-    public void ShowNotEnoughOre(Vector2 mouseScreenPosition)
+    public void ShowMessage(string text, Vector2 mouseScreenPosition)
     {
         if (messageText == null || canvasGroup == null || messageRect == null)
             return;
 
-        messageText.text = "Not enough ore";
+        messageText.text = text;
 
         // đặt text gần con trỏ
         RectTransform canvasRect = messageText.canvas.GetComponent<RectTransform>();
@@ -82,4 +82,10 @@ public class BuildFeedbackUI : MonoBehaviour
         canvasGroup.alpha = 1f;
         isShowing = true;
     }
+
+    public void ShowNotEnoughOre(Vector2 mouseScreenPosition)
+    {
+        ShowMessage("Not enough ore", mouseScreenPosition);
+    }
+
 }

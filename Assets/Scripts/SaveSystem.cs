@@ -103,8 +103,9 @@ public static class SaveSystem
         {
             if (b == null) continue;
 
-            // Core đã lưu riêng
-            if (b is CoreBuilding) continue;
+            // Core và EnemyCore KHÔNG lưu ở danh sách buildings
+            if (b is CoreBuilding || b is EnemyCoreBuilding)
+                continue;
 
             BuildingSaveData bs = new BuildingSaveData();
             bs.prefabName = b.gameObject.name.Replace("(Clone)", "");
@@ -112,23 +113,18 @@ public static class SaveSystem
             bs.anchorX = b.AnchorCell.x;
             bs.anchorY = b.AnchorCell.y;
 
-            // Upgrade
             var up = b.GetComponent<BuildingUpgrade>();
-            if (up != null)
-                bs.upgradeLevel = up.currentLevel;
+            if (up != null) bs.upgradeLevel = up.currentLevel;
 
-            // Drill
             var ore = b.GetComponent<OreBuilding>();
-            if (ore != null)
-                bs.storedOre = ore.storedOre;
+            if (ore != null) bs.storedOre = ore.storedOre;
 
-            // Conveyor
             var conv = b.GetComponent<ConveyorBuilding>();
-            if (conv != null)
-                bs.conveyorDir = (int)conv.direction;
+            if (conv != null) bs.conveyorDir = (int)conv.direction;
 
             data.buildings.Add(bs);
         }
+
 
         string json = JsonUtility.ToJson(data, true);
         File.WriteAllText(FilePath, json);

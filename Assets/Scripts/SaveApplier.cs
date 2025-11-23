@@ -4,6 +4,7 @@ public class SaveApplier : MonoBehaviour
 {
     private void Start()
     {
+        // Chỉ apply nếu có flag yêu cầu load
         if (!SaveSystem.LoadOnNextScene)
             return;
 
@@ -24,13 +25,22 @@ public class SaveApplier : MonoBehaviour
             GameFlowManager.Instance.ElapsedTime = data.elapsedTime;
         }
 
-        // 2) Xoá toàn bộ building runtime (trừ Core)
-        foreach (var b in Object.FindObjectsByType<BuildingBase>(FindObjectsSortMode.None))
+        // 2) Xoá toàn bộ building runtime (trừ Core & EnemyCore)
+        BuildingBase[] existing =
+            Object.FindObjectsByType<BuildingBase>(FindObjectsSortMode.None);
+
+        foreach (var b in existing)
         {
             if (b == null) continue;
-            if (b is CoreBuilding) continue;
 
-            Destroy(b.gameObject);
+            // GIỮ lại cả Core và EnemyCore (được đặt sẵn trong scene)
+            if (b is CoreBuilding || b is EnemyCoreBuilding)
+                continue;
+
+            if (GridManager.Instance != null)
+                GridManager.Instance.ClearBuilding(b, b.AnchorCell);
+
+            Object.Destroy(b.gameObject);
         }
 
         // 3) Core
@@ -39,8 +49,11 @@ public class SaveApplier : MonoBehaviour
         {
             core.transform.position = new Vector3(
                 data.core.posX, data.core.posY, data.core.posZ);
+
             core.maxHealth = data.core.maxHealth;
-            core.currentHealth = Mathf.Clamp(data.core.currentHealth, 0, core.maxHealth);
+            core.currentHealth = Mathf.Clamp(
+                data.core.currentHealth, 0, core.maxHealth);
+
             core.oreAmount = data.core.oreAmount;
         }
 
@@ -60,37 +73,59 @@ public class SaveApplier : MonoBehaviour
         {
             foreach (var bs in data.buildings)
             {
+                if (bs == null || string.IsNullOrEmpty(bs.prefabName))
+                    continue;
+
+                // EnemyCore là công trình đặt sẵn trong scene → không spawn lại
+                if (bs.prefabName == "EnemyCore" || bs.prefabName.Contains("EnemyCore"))
+                    continue;
+
                 BuildingBase prefab = FindBuildingPrefabByName(placer, bs.prefabName);
                 if (prefab == null)
                 {
-                    Debug.LogWarning($"SaveApplier: Không tìm thấy prefab building '{bs.prefabName}'");
+                    Debug.LogWarning(
+                        $"SaveApplier: Không tìm thấy prefab building '{bs.prefabName}'");
                     continue;
                 }
 
-                BuildingBase b = Instantiate(prefab);
-                Vector2Int cell = new Vector2Int(bs.anchorX, bs.anchorY);
-                gm.PlaceBuilding(b, cell);
+                BuildingBase b = Object.Instantiate(prefab);
 
+                // Đặt vào grid đúng ô anchor
+                Vector2Int anchor = new Vector2Int(bs.anchorX, bs.anchorY);
+                if (GridManager.Instance != null)
+                {
+                    GridManager.Instance.PlaceBuilding(b, anchor);
+                }
+                else
+                {
+                    // fallback (hiếm khi dùng)
+                    b.transform.position = new Vector3(anchor.x, anchor.y, 0f);
+                }
+
+                // HP
                 b.currentHealth = Mathf.Clamp(bs.currentHealth, 0, b.maxHealth);
 
+                // Upgrade level
                 var up = b.GetComponent<BuildingUpgrade>();
                 if (up != null && bs.upgradeLevel > 1)
                 {
                     up.currentLevel = bs.upgradeLevel;
-                    // nếu bạn có hàm ApplyStats() thì gọi ở đây
+                    // Nếu bạn có hàm up.ApplyStats(); thì gọi ở đây
                 }
 
+                // Drill – stored ore
                 var ore = b.GetComponent<OreBuilding>();
                 if (ore != null)
                 {
                     ore.storedOre = bs.storedOre;
                 }
 
+                // Conveyor – direction + xoay sprite
                 var conv = b.GetComponent<ConveyorBuilding>();
                 if (conv != null)
                 {
                     conv.direction = (ConveyorDirection)bs.conveyorDir;
-                    // nếu có hàm ApplyRotation() thì gọi thêm
+                    ApplyConveyorRotation(conv.transform, conv.direction);
                 }
             }
         }
@@ -109,6 +144,7 @@ public class SaveApplier : MonoBehaviour
         }
     }
 
+    // Tìm prefab trong mảng BuildOption theo tên
     private BuildingBase FindBuildingPrefabByName(BuildingPlacer placer, string prefabName)
     {
         if (placer.options == null) return null;
@@ -120,5 +156,19 @@ public class SaveApplier : MonoBehaviour
                 return opt.prefab;
         }
         return null;
+    }
+
+    // Hàm xoay Conveyor giống logic trong BuildingPlacer
+    private void ApplyConveyorRotation(Transform t, ConveyorDirection dir)
+    {
+        float angle = 0f;
+        switch (dir)
+        {
+            case ConveyorDirection.Right: angle = 0f; break;
+            case ConveyorDirection.Up: angle = 90f; break;
+            case ConveyorDirection.Left: angle = 180f; break;
+            case ConveyorDirection.Down: angle = 270f; break;
+        }
+        t.rotation = Quaternion.Euler(0f, 0f, angle);
     }
 }

@@ -1040,6 +1040,7 @@ GameObject:
   - component: {fileID: 853167036}
   - component: {fileID: 853167035}
   - component: {fileID: 853167034}
+  - component: {fileID: 853167037}
   m_Layer: 5
   m_Name: SfxMuteButton
   m_TagString: Untagged
@@ -1161,6 +1162,20 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 853167032}
   m_CullTransparentMesh: 1
+--- !u!114 &853167037
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 853167032}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ee0147404650cb249a36e69c0e531847, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UIButtonSfx
+  clickSfx: {fileID: 8300000, guid: bbb410b7074922b41bf98906b41406ff, type: 3}
+  volumeMultiplier: 1
 --- !u!1 &919357460
 GameObject:
   m_ObjectHideFlags: 0
@@ -1577,6 +1592,7 @@ GameObject:
   - component: {fileID: 1366404649}
   - component: {fileID: 1366404648}
   - component: {fileID: 1366404647}
+  - component: {fileID: 1366404650}
   m_Layer: 5
   m_Name: MusicMuteButton
   m_TagString: Untagged
@@ -1698,6 +1714,20 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1366404645}
   m_CullTransparentMesh: 1
+--- !u!114 &1366404650
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1366404645}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ee0147404650cb249a36e69c0e531847, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UIButtonSfx
+  clickSfx: {fileID: 8300000, guid: bbb410b7074922b41bf98906b41406ff, type: 3}
+  volumeMultiplier: 1
 --- !u!1 &1456717714
 GameObject:
   m_ObjectHideFlags: 0
@@ -1931,6 +1961,7 @@ GameObject:
   - component: {fileID: 1599885910}
   - component: {fileID: 1599885909}
   - component: {fileID: 1599885908}
+  - component: {fileID: 1599885911}
   m_Layer: 5
   m_Name: BackButton
   m_TagString: Untagged
@@ -2052,6 +2083,20 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1599885906}
   m_CullTransparentMesh: 1
+--- !u!114 &1599885911
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1599885906}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ee0147404650cb249a36e69c0e531847, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UIButtonSfx
+  clickSfx: {fileID: 8300000, guid: 298a0781ba740f64ca831a8d345edf09, type: 3}
+  volumeMultiplier: 1
 --- !u!1 &1658613273
 GameObject:
   m_ObjectHideFlags: 0

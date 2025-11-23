@@ -21,6 +21,10 @@ public class GameFlowManager : MonoBehaviour
     [Header("Scenes")]
     public string homeSceneName = "MainMenu";
 
+    [Header("Restart Confirm")]
+    [Tooltip("Panel nhỏ hỏi: 'Restart và xoá save? Y / N'")]
+    public GameObject restartConfirmPanel;
+
     private bool isGameOver = false;              // dùng chung cho cả win & lose
     public bool IsGameOver => isGameOver;
 
@@ -33,7 +37,16 @@ public class GameFlowManager : MonoBehaviour
     public string settingSceneName = "Setting";
 
     // Đếm thời gian chơi từ lúc vào MapTest (không tính thời gian pause)
+
     private float elapsedTime = 0f;
+    public float ElapsedTime
+    {
+        get => elapsedTime;
+        set => elapsedTime = Mathf.Max(0f, value);
+    }
+
+    // Trạng thái có đang mở bảng confirm restart không?
+    private bool isRestartConfirmOpen = false;
 
     private void Awake()
     {
@@ -56,11 +69,21 @@ public class GameFlowManager : MonoBehaviour
         if (pauseMenuPanel != null)
             pauseMenuPanel.SetActive(false);
 
+        if (restartConfirmPanel != null)
+            restartConfirmPanel.SetActive(false);
+
         UpdatePauseButtonLabel();
     }
 
     private void Update()
     {
+        // Nếu đang mở bảng xác nhận Restart -> chỉ nhận Y / N, bỏ qua logic khác
+        if (isRestartConfirmOpen)
+        {
+            HandleRestartConfirmInput();
+            return;
+        }
+
         // Tăng timer nếu game đang chạy
         if (!isGameOver && !isPaused)
         {
@@ -74,6 +97,85 @@ public class GameFlowManager : MonoBehaviour
         }
     }
 
+    public void PauseAndShowMenu()
+    {
+        if (isGameOver) return;
+
+        Pause();    // dùng hàm Pause() bạn đã có
+        if (pauseMenuPanel != null)
+            pauseMenuPanel.SetActive(true);
+    }
+
+    public void OnClickSaveAndExit()
+    {
+        if (isGameOver) return;
+
+        // Dừng thời gian trong khi save
+        Time.timeScale = 0f;
+
+        SaveSystem.SaveGame();
+
+        // Về MainMenu
+        SceneManager.LoadScene(homeSceneName);
+    }
+
+    // Gán hàm này cho nút Restart trong PauseMenuPanel
+    public void OnClickRestartFromPause()
+    {
+        if (isGameOver) return;
+
+        isRestartConfirmOpen = true;
+
+        if (restartConfirmPanel != null)
+            restartConfirmPanel.SetActive(true);
+    }
+
+
+    private void HandleRestartConfirmInput()
+    {
+        // Y = đồng ý restart + xoá save
+        if (Input.GetKeyDown(KeyCode.Y))
+        {
+            ConfirmRestart();
+        }
+        // N hoặc Esc = huỷ
+        else if (Input.GetKeyDown(KeyCode.N) || Input.GetKeyDown(KeyCode.Escape))
+        {
+            CancelRestart();
+        }
+    }
+
+    private void ConfirmRestart()
+    {
+        isRestartConfirmOpen = false;
+
+        if (restartConfirmPanel != null)
+            restartConfirmPanel.SetActive(false);
+
+        // Xoá file save (nếu có)
+        SaveSystem.DeleteSave();
+
+        // Reset tạm (dù load scene xong cũng reset lại hết)
+        isGameOver = false;
+        isWin = false;
+        isPaused = false;
+        Time.timeScale = 1f;
+
+        // Load lại scene hiện tại
+        Scene current = SceneManager.GetActiveScene();
+        SceneManager.LoadScene(current.name);
+    }
+
+    private void CancelRestart()
+    {
+        isRestartConfirmOpen = false;
+
+        if (restartConfirmPanel != null)
+            restartConfirmPanel.SetActive(false);
+    }
+
+
+
     // ---------- LOSE: CORE PLAYER BỊ PHÁ ----------
 
     public void OnCoreDestroyed()
@@ -81,6 +183,9 @@ public class GameFlowManager : MonoBehaviour
         if (isGameOver) return;
         isGameOver = true;
         isWin = false;
+
+        SaveSystem.DeleteSave();
+        SaveSystem.ClearLoadRequest();
 
         // tắt pause menu nếu đang mở
         if (pauseMenuPanel != null)
@@ -93,6 +198,8 @@ public class GameFlowManager : MonoBehaviour
             gameOverPanel.SetActive(true);
 
         Time.timeScale = 0f;
+
+
     }
 
     // ---------- WIN: ENEMY CORE BỊ PHÁ ----------
@@ -103,6 +210,9 @@ public class GameFlowManager : MonoBehaviour
         isGameOver = true;
         isWin = true;
 
+        SaveSystem.DeleteSave();
+        SaveSystem.ClearLoadRequest();
+
         // tắt pause menu nếu đang mở
         if (pauseMenuPanel != null)
             pauseMenuPanel.SetActive(false);
@@ -111,7 +221,7 @@ public class GameFlowManager : MonoBehaviour
         UpdatePauseButtonLabel();
 
         // Lấy số wave hiện tại
-        WaveManager wm = FindObjectOfType<WaveManager>();
+        WaveManager wm = FindFirstObjectByType<WaveManager>();
         int waves = wm != null ? wm.CurrentWave : 0;
 
         if (winWaveText != null)

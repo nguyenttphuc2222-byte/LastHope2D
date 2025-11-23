@@ -110,7 +110,7 @@ GameObject:
   - component: {fileID: 7181212631860095605}
   m_Layer: 8
   m_Name: defense_wall
-  m_TagString: Untagged
+  m_TagString: Wall
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -205,6 +205,8 @@ MonoBehaviour:
   buildCostOre: 10
   maxHealth: 200
   currentHealth: 0
+  destroyedSfx: {fileID: 8300000, guid: ce87c8a062280c2428179845448146e9, type: 3}
+  destroyedSfxVolume: 1
 --- !u!61 &-8840009509754497208
 BoxCollider2D:
   m_ObjectHideFlags: 0

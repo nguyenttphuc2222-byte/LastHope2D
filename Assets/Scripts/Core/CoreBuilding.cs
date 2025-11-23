@@ -9,7 +9,7 @@ public class CoreBuilding : BuildingBase
     [Tooltip("Tổng số quặng mà Core đang giữ.")]
     public int oreAmount; // đây là kho ore thật
 
-    private void Awake()
+    protected override void Awake()
     {
         base.Awake(); // set currentHealth = maxHealth
 

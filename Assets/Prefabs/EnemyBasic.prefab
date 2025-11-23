@@ -15,7 +15,7 @@ GameObject:
   - component: {fileID: 5000878038400849742}
   m_Layer: 9
   m_Name: EnemyBasic
-  m_TagString: Untagged
+  m_TagString: Enemy
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -173,3 +173,8 @@ MonoBehaviour:
   damagePerHit: 10
   attackInterval: 0.5
   stopDistance: 2
+  scanRadius: 10
+  flashColor: {r: 0.5211229, g: 0.5019608, b: 1, a: 1}
+  flashDuration: 0.1
+  deathSound: {fileID: 8300000, guid: babe66c3cfc4c2c4caa89f8137566843, type: 3}
+  soundVolume: 0.8

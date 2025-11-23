@@ -16,10 +16,26 @@ public class BuildingBase : MonoBehaviour
     public int maxHealth = 100;
     public int currentHealth;
 
+    [Header("SFX")]
+    [Tooltip("Âm thanh phát khi công trình này bị phá hủy.")]
+    public AudioClip destroyedSfx;
+    [Range(0f, 1f)]
+    public float destroyedSfxVolume = 1f;
+
+
     protected virtual void Awake()
     {
         currentHealth = maxHealth;
     }
+
+    protected virtual void PlayDestroyedSfx()
+    {
+        if (destroyedSfx == null) return;
+        if (AudioManager.Instance == null) return;
+
+        AudioManager.Instance.PlaySfx(destroyedSfx, destroyedSfxVolume);
+    }
+
 
     public virtual void OnPlaced(Vector2Int anchorCell)
     {
@@ -56,6 +72,7 @@ public class BuildingBase : MonoBehaviour
 
     protected virtual void OnDestroyed()
     {
+        PlayDestroyedSfx();
         // Xoá khỏi grid
         if (GridManager.Instance != null)
         {

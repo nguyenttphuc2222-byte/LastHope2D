@@ -16,6 +16,16 @@ public class MainMenuUI : MonoBehaviour
 
     public void OnClickStartGame()
     {
+        // Nếu có save thì yêu cầu MapTest load lại
+        if (SaveSystem.HasSaveFile())
+        {
+            SaveSystem.RequestLoadOnNextScene();
+        }
+        else
+        {
+            SaveSystem.ClearLoadRequest();
+        }
+
         Time.timeScale = 1f;
         SceneManager.LoadScene(gameSceneName);
 
@@ -23,6 +33,11 @@ public class MainMenuUI : MonoBehaviour
         {
             AudioManager.Instance.PlayGameplayMusic();
         }
+    }
+
+    public void OnClickQuit()
+    {
+        Application.Quit();
     }
 
     public void OnClickOpenSetting()

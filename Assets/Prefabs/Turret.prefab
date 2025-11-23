@@ -265,7 +265,7 @@ GameObject:
   - component: {fileID: 1814743792230148328}
   m_Layer: 8
   m_Name: Turret
-  m_TagString: Untagged
+  m_TagString: Defense
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -361,6 +361,8 @@ MonoBehaviour:
   buildCostOre: 20
   maxHealth: 100
   currentHealth: 0
+  destroyedSfx: {fileID: 8300000, guid: 394ef90ae8cffc34b80e0461fcdf423a, type: 3}
+  destroyedSfxVolume: 1
 --- !u!61 &-7993813786711043448
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -423,10 +425,14 @@ MonoBehaviour:
   buildCostOre: 20
   maxHealth: 100
   currentHealth: 0
+  destroyedSfx: {fileID: 0}
+  destroyedSfxVolume: 1
   range: 5
   fireRate: 1
   bulletDamage: 10
   bulletPrefab: {fileID: 4805813080904908450, guid: a041201d8f78a3644a5be1134af94dc2, type: 3}
+  shootSfx: {fileID: 8300000, guid: b64dcb5664f897848af7d202208c28f6, type: 3}
+  shootSfxVolume: 0.09
   barrelTransform: {fileID: 6819087792274667565}
   firePoint: {fileID: 472668812943178653}
   rotateSpeed: 720

@@ -19,7 +19,7 @@ GameObject:
   - component: {fileID: 7506619485868607875}
   m_Layer: 8
   m_Name: Conveyor
-  m_TagString: Untagged
+  m_TagString: Resource
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -115,6 +115,8 @@ MonoBehaviour:
   buildCostOre: 10
   maxHealth: 200
   currentHealth: 0
+  destroyedSfx: {fileID: 8300000, guid: 8680afcc4831aa44eb475f4f3b433780, type: 3}
+  destroyedSfxVolume: 1
 --- !u!61 &5963709830754609264
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -222,6 +224,8 @@ MonoBehaviour:
   buildCostOre: 5
   maxHealth: 100
   currentHealth: 0
+  destroyedSfx: {fileID: 0}
+  destroyedSfxVolume: 1
   direction: 0
   moveInterval: 0.5
   allowedType: 1

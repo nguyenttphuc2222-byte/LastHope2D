@@ -8,6 +8,11 @@ public class TurretBuilding : BuildingBase
     public int bulletDamage = 15;
     public Bullet bulletPrefab;
 
+    [Header("SFX")]
+    public AudioClip shootSfx;                 // âm thanh bắn
+    [Range(0f, 1f)] public float shootSfxVolume = 1f;   // volume riêng cho turret
+
+
     [Tooltip("Transform của nòng súng, sẽ xoay về phía enemy.")]
     public Transform barrelTransform;
 
@@ -110,6 +115,11 @@ public class TurretBuilding : BuildingBase
         Vector2 dir = barrelTransform.up; // sprite nòng hướng lên
 
         Bullet b = Instantiate(bulletPrefab, origin, barrelTransform.rotation);
+        if (shootSfx != null && AudioManager.Instance != null)
+        {
+            AudioManager.Instance.PlaySfx(shootSfx, shootSfxVolume);
+        }
+
         b.Init(dir, bulletDamage);
 
         fireCooldown = 1f / fireRate;

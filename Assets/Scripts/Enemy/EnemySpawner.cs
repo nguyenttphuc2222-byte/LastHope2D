@@ -1,63 +1,69 @@
 ﻿using UnityEngine;
+using System.Collections.Generic;
 
 public class EnemySpawner : MonoBehaviour
 {
-    [Header("Enemy prefabs (chọn random 1 cái khi spawn)")]
-    public EnemyBasic[] enemyPrefabs;
-
-    [Header("Spawn settings")]
-    public float spawnInterval = 5f;
-    public int enemiesPerWave;
-    public bool autoStart = true;
-
+    private List<EnemyBasic> currentWaveEnemies = new List<EnemyBasic>();
+    private float spawnInterval;
     private float timer;
-    private bool spawning;
+    private bool isSpawning = false;
 
-    private void Start()
-    {
-        spawning = autoStart;
-        timer = spawnInterval;
-    }
+    // Biến lưu hệ số sức mạnh của Wave hiện tại
+    private float currentBuffMultiplier = 1f;
 
     private void Update()
     {
-        if (!spawning) return;
-        if (CoreBuilding.Instance == null) return;
+        if (!isSpawning) return;
+
+        if (currentWaveEnemies.Count == 0)
+        {
+            isSpawning = false;
+            return;
+        }
 
         timer -= Time.deltaTime;
         if (timer <= 0f)
         {
+            SpawnNextEnemy();
             timer = spawnInterval;
-            SpawnWave();
         }
     }
 
-    public void StartSpawning()
+    // [QUAN TRỌNG] Cập nhật hàm này nhận thêm float multiplier
+    public void StartSpawningWave(List<EnemyBasic> enemies, float interval, float multiplier)
     {
-        spawning = true;
-        timer = spawnInterval;
+        currentWaveEnemies = new List<EnemyBasic>(enemies);
+        spawnInterval = interval;
+        currentBuffMultiplier = multiplier; // Lưu lại hệ số
+
+        isSpawning = true;
+        timer = 0f;
     }
 
     public void StopSpawning()
     {
-        spawning = false;
+        isSpawning = false;
+        currentWaveEnemies.Clear();
     }
 
-    private void SpawnWave()
+    private void SpawnNextEnemy()
     {
-        if (enemyPrefabs == null || enemyPrefabs.Length == 0)
+        if (currentWaveEnemies.Count > 0)
         {
-            Debug.LogWarning("EnemySpawner: chưa gán enemyPrefabs.");
-            return;
-        }
+            EnemyBasic prefabToSpawn = currentWaveEnemies[0];
+            currentWaveEnemies.RemoveAt(0);
 
-        for (int i = 0; i < enemiesPerWave; i++)
-        {
-            EnemyBasic prefab = enemyPrefabs[Random.Range(0, enemyPrefabs.Length)];
             Vector3 pos = transform.position;
             pos += new Vector3(Random.Range(-0.2f, 0.2f), Random.Range(-0.2f, 0.2f), 0f);
 
-            Instantiate(prefab, pos, Quaternion.identity);
+            if (prefabToSpawn != null)
+            {
+                // 1. Tạo quái
+                EnemyBasic newEnemy = Instantiate(prefabToSpawn, pos, Quaternion.identity);
+
+                // 2. [QUAN TRỌNG] Buff sức mạnh ngay lập tức
+                newEnemy.BuffStats(currentBuffMultiplier);
+            }
         }
     }
 }

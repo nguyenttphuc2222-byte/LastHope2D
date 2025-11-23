@@ -108,7 +108,7 @@ GameObject:
   - component: {fileID: 1989668175011811463}
   m_Layer: 8
   m_Name: Core
-  m_TagString: Untagged
+  m_TagString: Core
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -201,9 +201,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CoreBuilding
   size: {x: 2, y: 2}
   buildCostOre: 500
-  maxHealth: 9999
+  maxHealth: 1000
   currentHealth: 0
-  oreAmount: 1000
+  destroyedSfx: {fileID: 8300000, guid: f906c37cc2cd7ec4eb0d165a225b61b1, type: 3}
+  destroyedSfxVolume: 1
+  oreAmount: 9999999
 --- !u!61 &-4624412123657838413
 BoxCollider2D:
   m_ObjectHideFlags: 0

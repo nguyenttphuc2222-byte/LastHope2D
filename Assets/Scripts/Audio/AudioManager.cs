@@ -33,7 +33,7 @@ public class AudioManager : MonoBehaviour
 
     private void Awake()
     {
-
+        // Singleton
         if (Instance != null && Instance != this)
         {
             Destroy(gameObject);
@@ -43,9 +43,15 @@ public class AudioManager : MonoBehaviour
         Instance = this;
         DontDestroyOnLoad(gameObject);
 
+        // Lấy / tạo AudioSource cho music
         if (musicSource == null)
-            musicSource = GetComponents<AudioSource>()[0];
+        {
+            var sources = GetComponents<AudioSource>();
+            if (sources.Length > 0) musicSource = sources[0];
+            else musicSource = gameObject.AddComponent<AudioSource>();
+        }
 
+        // Lấy / tạo AudioSource cho SFX
         if (sfxSource == null)
         {
             var sources = GetComponents<AudioSource>();
@@ -55,13 +61,14 @@ public class AudioManager : MonoBehaviour
 
         musicSource.loop = true;
         musicSource.playOnAwake = false;
+
         sfxSource.loop = false;
         sfxSource.playOnAwake = false;
 
         LoadSettings();
         ApplyVolumes();
 
-        // CHỖ QUAN TRỌNG: bắt buộc phát nhạc menu nếu có clip
+        // Phát nhạc menu mặc định nếu có
         if (menuMusic != null)
         {
             PlayMusicLoop(menuMusic, true);
@@ -73,13 +80,10 @@ public class AudioManager : MonoBehaviour
         }
     }
 
-
-
-    //Load / Save
+    // ------------- Load / Save -------------
 
     private void LoadSettings()
     {
-        // Nếu chưa có key thì mặc định = 1
         musicVolume = PlayerPrefs.HasKey(MusicVolumeKey)
             ? PlayerPrefs.GetFloat(MusicVolumeKey)
             : 1f;
@@ -91,11 +95,9 @@ public class AudioManager : MonoBehaviour
         musicMuted = PlayerPrefs.GetInt(MusicMutedKey, 0) == 1;
         sfxMuted = PlayerPrefs.GetInt(SfxMutedKey, 0) == 1;
 
-        // đảm bảo luôn trong khoảng 0..1
         musicVolume = Mathf.Clamp01(musicVolume);
         sfxVolume = Mathf.Clamp01(sfxVolume);
     }
-
 
     private void SaveSettings()
     {
@@ -115,7 +117,7 @@ public class AudioManager : MonoBehaviour
         if (sfxSource != null) sfxSource.volume = sfxEff;
     }
 
-    //API cho volume / mute
+    // ------------- API Volume / Mute -------------
 
     public void SetMusicVolume(float value)
     {
@@ -145,7 +147,7 @@ public class AudioManager : MonoBehaviour
         ApplyVolumes();
     }
 
-    // API cho phát nhạc / SFX
+    // ------------- API Phát nhạc -------------
 
     public void PlayMusicLoop(AudioClip clip, bool forceRestart = false)
     {
@@ -171,9 +173,23 @@ public class AudioManager : MonoBehaviour
             PlayMusicLoop(menuMusic);
     }
 
+    // ------------- API SFX (QUAN TRỌNG) -------------
+
+    // Dùng cho SFX bình thường (click nút, v.v.)
     public void PlaySfx(AudioClip clip)
     {
         if (clip == null || sfxSource == null) return;
         sfxSource.PlayOneShot(clip);
+        // volume thực tế = sfxSource.volume (đã nhân với slider & mute)
+    }
+
+    // Dùng cho SFX có volume riêng (EnemyBasic.soundVolume, waveStartSoundVolume, …)
+    public void PlaySfx(AudioClip clip, float volumeScale)
+    {
+        if (clip == null || sfxSource == null) return;
+
+        // volume cuối = sfxSource.volume (slider & mute) * volumeScale (0..1) riêng cho clip
+        float scale = Mathf.Clamp01(volumeScale);
+        sfxSource.PlayOneShot(clip, scale);
     }
 }

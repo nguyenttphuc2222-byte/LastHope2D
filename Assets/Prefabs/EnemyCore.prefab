@@ -166,5 +166,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: '::'
   size: {x: 2, y: 2}
   buildCostOre: 0
-  maxHealth: 9999
+  maxHealth: 5000
   currentHealth: 0
+  destroyedSfx: {fileID: 8300000, guid: f906c37cc2cd7ec4eb0d165a225b61b1, type: 3}
+  destroyedSfxVolume: 1

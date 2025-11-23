@@ -29,8 +29,10 @@ public class OreBuilding : BuildingBase
     private float timer;
     private BuildingUpgrade upgrade;   // dùng level từ hệ upgrade hiện tại
 
-    protected virtual void Awake()
+    protected override void Awake()
     {
+        // Gọi Awake() của BuildingBase để currentHealth = maxHealth, v.v.
+        base.Awake();
         // Nếu BuildingBase có Awake(), và bạn override, nhớ gọi base.Awake() ở đây.
         upgrade = GetComponent<BuildingUpgrade>();
     }

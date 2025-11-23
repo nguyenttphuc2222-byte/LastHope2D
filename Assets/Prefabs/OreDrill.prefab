@@ -112,7 +112,7 @@ GameObject:
   - component: {fileID: 3913259126164840911}
   m_Layer: 8
   m_Name: OreDrill
-  m_TagString: Untagged
+  m_TagString: Resource
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -207,6 +207,8 @@ MonoBehaviour:
   buildCostOre: 10
   maxHealth: 50
   currentHealth: 0
+  destroyedSfx: {fileID: 8300000, guid: 8680afcc4831aa44eb475f4f3b433780, type: 3}
+  destroyedSfxVolume: 1
 --- !u!61 &3404860691596442161
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -313,6 +315,8 @@ MonoBehaviour:
   buildCostOre: 10
   maxHealth: 50
   currentHealth: 0
+  destroyedSfx: {fileID: 0}
+  destroyedSfxVolume: 1
   baseOrePerCycle: 1
   baseCycleTime: 2
   orePerLevelBonus: 1
